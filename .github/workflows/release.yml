@@ -1,0 +1,74 @@
+name: Create Tag/Release
+on:
+  push:
+    branches:
+      - dev-deploy
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+          ref: dev-release
+      - name: Bump version last released version 
+        run: |
+          echo "release_proj_version=`grep -o '[0-9]\.[0-9]\.[0-9]' < project.py`" >> $GITHUB_ENV
+      - uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+          ref: dev
+      - name: Bump version
+        run: |
+          export proj_version=`grep -o '[0-9]\.[0-9]\.[0-9]' < project.py`
+          echo "proj_version=`grep -o '[0-9]\.[0-9]\.[0-9]' < project.py`" >> $GITHUB_ENV
+          echo "updated_version=`echo $proj_version | awk -F. -v OFS=. 'NF==1{print ++$NF}; NF>1{if(length($NF+1)>length($NF))$(NF-1)++; $NF=sprintf("%0*d", length($NF), ($NF+1)%(10^length($NF))); print}'`" >> $GITHUB_ENV
+      - name: Match versioning
+        if: ${{ env.release_proj_version != env.proj_version }}
+        run: |
+          echo "updated_version=${{ env.proj_version }}" >> $GITHUB_ENV
+      - name: Update project
+        run: |
+          sed -ie "s/$proj_version/$updated_version/gi" project.py
+          git config --local user.name $GITHUB_USERNAME
+          git config --local user.email $GITHUB_EMAIL
+          git add .
+          git commit -am "update version ${{ env.updated_version }}"
+        env:
+          GITHUB_USERNAME: github-actions[bot]
+          GITHUB_EMAIL: github-actions[bot]@users.noreply.github.com
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: dev
+      - name: Run squash
+        run: |
+          git config --local user.name $GITHUB_USERNAME
+          git config --local user.email $GITHUB_EMAIL
+          mkdir ./temp
+          mv .git/ ./temp/
+          cd ./temp
+          git checkout dev-release
+          mv .git/ ..
+          cd ..
+          rm -rf temp
+          git add .
+          git commit -am "update version ${{ env.updated_version }}"
+        env:
+          GITHUB_USERNAME: github-actions[bot]
+          GITHUB_EMAIL: github-actions[bot]@users.noreply.github.com
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: dev-release
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.PUBLIC_REPO_TOKEN }}
+          repository: OriGenAI/preprocessing-public
+          branch: "update/${{ env.updated_version }}"

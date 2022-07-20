@@ -1,0 +1,12 @@
+<rte>
+<comment date="" source="slbrun" time="">Workflow starting task: SIMULATION_1</comment>
+<comment date="" source="slbrun" time="">Submission Command: /apps/ecl/20193/2019.3/bin/linux_x86_64/eclipse.exe SIMULATION_1</comment>
+<comment date="" source="slbrun" time="">E100 has finished</comment>
+<comment date="" source="slbrun" time="">Workflow starting task: SIMULATION_1 summary conversion</comment>
+<comment date="" source="slbrun" time="">Creating temp conversion directory convert_20210831154905_3d76d916</comment>
+<comment date="" source="slbrun" time="">Submission Command: /apps/ecl/20193/2019.3/bin/linux_x86_64/ConvertSummaryData2DataBase.exe SIMULATION_1.DATA convert_20210831154905_3d76d916</comment>
+<comment date="" source="slbrun" time="">Conversion has finished</comment>
+<comment date="" source="slbrun" time="">Removing temp conversion directory convert_20210831154905_3d76d916</comment>
+<comment date="" source="slbrun" time="">Workflow has finished</comment>
+<comment date="" source="slbrun" time="">Session in progress.</comment>
+</rte>

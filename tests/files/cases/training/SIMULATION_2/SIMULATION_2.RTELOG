@@ -1,0 +1,10 @@
+INFO 2021-08-31 10:48:28,869 sim423 Workflow starting task: SIMULATION_1
+INFO 2021-08-31 10:48:28,929 sim423 Submission Command: /apps/ecl/20193/2019.3/bin/linux_x86_64/eclipse.exe SIMULATION_1
+INFO 2021-08-31 10:49:05,615 sim423 E100 has finished
+INFO 2021-08-31 10:49:05,622 sim423 Workflow starting task: SIMULATION_1 summary conversion
+INFO 2021-08-31 10:49:05,625 sim423 Creating temp conversion directory convert_20210831154905_3d76d916
+INFO 2021-08-31 10:49:05,626 sim423 Submission Command: /apps/ecl/20193/2019.3/bin/linux_x86_64/ConvertSummaryData2DataBase.exe SIMULATION_1.DATA convert_20210831154905_3d76d916
+INFO 2021-08-31 10:49:07,836 sim423 Conversion has finished
+INFO 2021-08-31 10:49:07,843 sim423 Removing temp conversion directory convert_20210831154905_3d76d916
+INFO 2021-08-31 10:49:07,849 sim423 Workflow has finished
+INFO 2021-08-31 10:49:07,849 sim423 Session in progress.

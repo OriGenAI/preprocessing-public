@@ -1,16 +1,16 @@
 def expand_dates(dataframe, dates_df, index=[], fills=[]):
     """
-        Expand dataframe with all the provided dates, 
-        it will use the index list to drop duplicates
+    Expand dataframe with all the provided dates,
+    it will use the index list to drop duplicates
 
-        Args: 
-            dataframe (Dataframe): dataframe to expand dates
-            dates_df (Dataframe): dates dataframe
-            index (List): list of index of the dataframe
-            fills (List): list of columns to fordward fill
+    Args:
+        dataframe (Dataframe): dataframe to expand dates
+        dates_df (Dataframe): dates dataframe
+        index (List): list of index of the dataframe
+        fills (List): list of columns to fordward fill
 
-        Returns:
-            dataframe: dataframe with the expanded dates
+    Returns:
+        dataframe: dataframe with the expanded dates
     """
 
     well_names_df = dataframe.drop_duplicates(index)

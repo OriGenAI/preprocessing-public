@@ -11,7 +11,7 @@ class Config(object):
     LOG_LOC = "logs"
 
     WELL_SETTINGS = "configs/group_well_info.yml"
-    
+
     HM_WATER_INJ_CONTROLS = ["WWIRH"]
     HM_GAS_INJ_CONTROLS = ["WBHPH"]
     HM_PROD_CONTROLS = ["WBHPH", "WPRH", "WOPRH", "WGPRH"]
@@ -59,11 +59,21 @@ class Config(object):
         "NRSEGZ": 179,
         # Number of entries per segment in the multi-segment well ILBR array,
         # for when multi-segment wells have been activated, or zero otherwise
-        "NILBRZ": 180
+        "NILBRZ": 180,
     }
 
     ## Keywords related to groups and wells
-    GROUP_WELL_KEYWORDS = ["IGRP", "SGRP", "XGRP", "ZGRP", "IWEL", "SWEL", "XWEL", "ZWEL"]
+    GROUP_WELL_KEYWORDS = [
+        "IGRP",
+        "SGRP",
+        "XGRP",
+        "ZGRP",
+        "IWEL",
+        "SWEL",
+        "XWEL",
+        "ZWEL",
+    ]
+
 
 class ProductionConfig(Config):
     pass

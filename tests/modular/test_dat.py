@@ -16,9 +16,7 @@ def test_grdecl_preprocessing_module():
     dat_files = {}
 
     for keyword in mappings:
-        file = next(
-            filter(lambda file: keyword["source"].lower() in file, dat_files_loc), None
-        )
+        file = next(filter(lambda file: keyword["source"].lower() in file, dat_files_loc), None)
         if file:
             dat_files[keyword["source"].lower()] = file
 

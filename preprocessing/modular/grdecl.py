@@ -10,7 +10,4 @@ def get_keyword(keyword, grdecl):
 
 
 def preprocess(grdecl, mapping):
-    return {
-        keyword.get("name").lower(): get_keyword(keyword.get("source"), grdecl)
-        for keyword in mapping
-    }
+    return {keyword.get("name").lower(): get_keyword(keyword.get("source"), grdecl) for keyword in mapping}

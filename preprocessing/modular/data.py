@@ -47,13 +47,9 @@ class WellSpecsProcessor:
         grouped_compdat = None
         grouped_wcon = None
         if not self.compdat_frame.empty:
-            grouped_compdat = self.compdat_frame.groupby(
-                by=["WELL"], sort=False, dropna=False
-            )
+            grouped_compdat = self.compdat_frame.groupby(by=["WELL"], sort=False, dropna=False)
         if not self.wcon_frame.empty:
-            grouped_wcon = self.wcon_frame.groupby(
-                by=["WELL"], sort=False, dropna=False
-            )
+            grouped_wcon = self.wcon_frame.groupby(by=["WELL"], sort=False, dropna=False)
 
         # Loop the groups to create the processed object
         wells = {}
@@ -73,10 +69,7 @@ class WellSpecsProcessor:
                 wcon_info_df = grouped_wcon.get_group(well_name)
                 well_type = (
                     "PRODUCER"
-                    if wcon_info_df[wcon_info_df["KEYWORD"].notna()]
-                    .iloc[0]
-                    .at["KEYWORD"]
-                    in ["WCONHIST", "WCONPROD"]
+                    if wcon_info_df[wcon_info_df["KEYWORD"].notna()].iloc[0].at["KEYWORD"] in ["WCONHIST", "WCONPROD"]
                     else "INJECTOR"
                 )
                 well_schedule = (wcon_info_df["STATUS"] == "OPEN").to_list()
@@ -102,9 +95,7 @@ class WellSpecsProcessor:
                 tran = tran_list[0] if len(tran_list) > 0 else 0
                 global_index = k * self.dims[1] * self.dims[2] + i * self.dims[2] + j
 
-                well_info["perforations"].append(
-                    [k - 1, i - 1, j - 1, global_index, tran]
-                )
+                well_info["perforations"].append([k - 1, i - 1, j - 1, global_index, tran])
                 well_info["schedule"].append((value["STATUS"] == "OPEN").to_list())
 
             wells[well_name] = well_info
@@ -189,27 +180,19 @@ class WellSpecsProcessor:
                     }
             elif kword.name == "COMPDAT":
                 for rec in kword:  # Loop over the lines inside COMPDAT record
-                    rec_data = parse_opmio_deckrecord(
-                        rec, "COMPDAT", renamer=COMPDAT_RENAMER
-                    )
+                    rec_data = parse_opmio_deckrecord(rec, "COMPDAT", renamer=COMPDAT_RENAMER)
                     rec_data["DATE"] = date
                     rec_data["KEYWORD_IDX"] = idx
                     if rec_data["I"] == 0:
                         if rec_data["WELL"] not in welspecs:
-                            raise ValueError(
-                                "WELSPECS must be provided when I is defaulted in COMPDAT"
-                            )
+                            raise ValueError("WELSPECS must be provided when I is defaulted in COMPDAT")
                         rec_data["I"] = welspecs[rec_data["WELL"]]["I"]
                     if rec_data["J"] == 0:
                         if rec_data["WELL"] not in welspecs:
-                            raise ValueError(
-                                "WELSPECS must be provided when J is defaulted in COMPDAT"
-                            )
+                            raise ValueError("WELSPECS must be provided when J is defaulted in COMPDAT")
                         rec_data["J"] = welspecs[rec_data["WELL"]]["J"]
                     if not rec_data.get("REFERENCE_DEPTH"):
-                        rec_data["REFERENCE_DEPTH"] = welspecs[rec_data["WELL"]][
-                            "REFERENCE_DEPTH"
-                        ]
+                        rec_data["REFERENCE_DEPTH"] = welspecs[rec_data["WELL"]]["REFERENCE_DEPTH"]
                     compdatrecords.append(rec_data)
             elif kword.name in WCONKEYS:
                 for rec in kword:  # Loop over the lines inside WCON* record
@@ -252,9 +235,7 @@ class WellSpecsProcessor:
             compdat_df["STATUS"] = compdat_df["STATUS"].fillna("SHUT")
 
         if not wcon_df.empty:
-            wcon_df = expand_dates(
-                wcon_df, dates_df, index=["WELL"], fills=["STATUS", "KEYWORD"]
-            )
+            wcon_df = expand_dates(wcon_df, dates_df, index=["WELL"], fills=["STATUS", "KEYWORD"])
             wcon_df["STATUS"] = wcon_df["STATUS"].fillna("SHUT")
 
         if "KEYWORD_IDX" in compdat_df.columns:
@@ -278,17 +259,11 @@ class WellSpecsProcessor:
         """
 
         # Remove well interactions
-        welopen_df = welopen_df.query(
-            "not (I.isnull() and J.isnull() and K.isnull() and C1.isnull() and C2.isnull())"
-        )
-        specific_welopen = welopen_df.query(
-            "not (I.isnull() and J.isnull() and K.isnull())"
-        )
+        welopen_df = welopen_df.query("not (I.isnull() and J.isnull() and K.isnull() and C1.isnull() and C2.isnull())")
+        specific_welopen = welopen_df.query("not (I.isnull() and J.isnull() and K.isnull())")
         welopen_complump = welopen_df.query("not (C1.isnull() and C2.isnull())")
 
-        welopen_complump = self.expand_complump_in_welopen_df(
-            welopen_complump, complump_df
-        )
+        welopen_complump = self.expand_complump_in_welopen_df(welopen_complump, complump_df)
 
         # Drop and rename columns
         specific_welopen = specific_welopen.drop(["C1", "C2"], axis=1)

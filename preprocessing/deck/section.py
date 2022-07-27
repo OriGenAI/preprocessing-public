@@ -36,13 +36,10 @@ def parse_dependency_path(file_absolute_path, dependency):
     file_path_list = file_path.split("/")
 
     # Count and remove previous directories: ../
-    previous_directories_expression = re.compile(
-        r"(?P<previous_directories>(\.\./)|(\.\.\\))"
-    )
+    previous_directories_expression = re.compile(r"(?P<previous_directories>(\.\./)|(\.\.\\))")
     previous_directories = previous_directories_expression.finditer(dependency)
     previous_directories = [
-        previous_directory.groupdict().get("previous_directories")
-        for previous_directory in previous_directories
+        previous_directory.groupdict().get("previous_directories") for previous_directory in previous_directories
     ]
     number_of_previous_directories = len(previous_directories)
     dependency_name = dependency.replace("../", "").replace("..\\", "")
@@ -80,8 +77,7 @@ def find_includes(content, filepath, download_func=None):
 
 def scan_file(content, section_header):
     section_expression_re = re.compile(
-        section_header
-        + r"\s+=*(?P<content>[\S\s]*?)(RUNSPEC|GRID|PROPS|REGIONS|SOLUTIONS|SUMMARY|SCHEDULE)\s"
+        section_header + r"\s+=*(?P<content>[\S\s]*?)(RUNSPEC|GRID|PROPS|REGIONS|SOLUTIONS|SUMMARY|SCHEDULE)\s"
     )
     section_found = section_expression_re.finditer(content)
 

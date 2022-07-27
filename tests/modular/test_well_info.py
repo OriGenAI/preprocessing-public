@@ -1,6 +1,7 @@
 from preprocessing.modular.data import WellSpecsProcessor
 from datetime import date
 
+
 def test_well_info_well_specification_data():
     # Read files
     processor = WellSpecsProcessor("tests/files/cases/training/SIMULATION_2/SIMULATION_2.DATA")
@@ -13,7 +14,7 @@ def test_well_info_well_specification_data():
     assert result.get("dates")[0] == date(2015, 4, 9)
     assert result.get("dates")[1] == date(2016, 4, 8)
     assert result.get("dates")[2] == date(2017, 4, 8)
-    
+
     # Test well perforations
     well_perforations = result.get("wells").get("I1").get("perforations")
     assert well_perforations[0][0] == 0
@@ -53,9 +54,15 @@ def test_well_info_well_connection_data():
     assert dates[2] == date(1982, 2, 1)
     assert dates[3] == date(1982, 3, 1)
     assert dates[4] == date(1982, 4, 1)
-    
+
     # Test well perforations
-    assert result.get("wells").get("RB-007").get("perforations")[0] == [0, 70, 62, 1883, 0.000954877]
+    assert result.get("wells").get("RB-007").get("perforations")[0] == [
+        0,
+        70,
+        62,
+        1883,
+        0.000954877,
+    ]
 
     # Test well schedule
     schedule = result.get("wells").get("RB-007").get("schedule")

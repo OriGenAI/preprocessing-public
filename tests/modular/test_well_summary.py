@@ -24,4 +24,3 @@ def test_well_info_well_specification_data():
     assert preprocessed.iloc[0].at["STATUS"] == "SHUT"
     assert preprocessed.iloc[1].at["STATUS"] == "OPEN"
     assert preprocessed.iloc[6].at["STATUS"] == "OPEN"
-

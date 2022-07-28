@@ -1,7 +1,11 @@
 # Summary
 This library handles preprocessing for training and simulation datasets. Currently only training datasets (completed eclipse cases) are supported. The **deck** and **modular** directories contain all the processing functionality built so far, including some extensions of the OriClipse library which will be used for simulation processing.
 # Installation
-To use this as a pip library install it by putting it in your requirements file:
+```
+poetry env use `which python3.8`
+poetry shell
+poetry install
+```
 
 # Training Dataset Processing
 
@@ -75,3 +79,23 @@ a pickle/serialized dictionary object containing the following
 an h5 file of a specific timestep with the following datasets
 - pressure : numpy.array - the pressure value matrix
 - swat : numpy.array - the swat value matrix
+
+
+### Publishing
+
+In order to publish a package to PyPi, the following steps must be followed:
+
+- The project status that wants to be published needs to be on the private repository dev branch.
+    - The project version on pyproject should be updated, or the following steps will not work.
+- Push the dev branch to the dev-deploy branch
+    - This will trigger a GitHub action that checks the new version, and creates an squashed commit.
+    - The action will then push the squashed commit to the branch dev-release.
+    - The action will also push to the dev branch on the public repository.
+- On the public repository, on release creation, a new version of the repository will be pushed to PyPi.
+    - The release creation will trigger a GitHub action that does this process automatically.
+
+This process depends on having the following secrets on GitHub:
+#### On the private repository:
+- PUBLIC_REPO_TOKEN: Personal Access Token from GitHub. Necessary to publish to the public repository.
+#### On the public repository:
+- PYPI_API_TOKEN: PyPi token. Necessary to publish to PyPi.

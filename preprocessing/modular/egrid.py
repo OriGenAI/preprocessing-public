@@ -1,6 +1,3 @@
-import numpy as np
-
-
 def extract_logic(egrid):
     logic = egrid.export_actnum().numpyCopy()
     return logic
@@ -17,4 +14,4 @@ def preprocess(egrid):
     """
     logic = extract_logic(egrid)
 
-    return {"logic": logic}
+    return {"actnum": logic}

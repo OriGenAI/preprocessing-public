@@ -21,7 +21,7 @@ class Config(object):
     FDP_PROD_CONTROLS = ["WBHP", "WOPR", "WWPR", "WGPR"]
 
     PREPROCESSING_VERSION = 0.1
-    ## Well related elements (in INTEHEAD keyword)
+    # Well related elements (in INTEHEAD keyword)
     INTHEAD_KEYWORD_ELEMENTS = {
         # Number of wells
         "NWELLS": 16,
@@ -62,7 +62,7 @@ class Config(object):
         "NILBRZ": 180,
     }
 
-    ## Keywords related to groups and wells
+    # Keywords related to groups and wells
     GROUP_WELL_KEYWORDS = [
         "IGRP",
         "SGRP",

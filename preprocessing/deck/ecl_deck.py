@@ -1,6 +1,6 @@
-from ecl2df import satfunc, pvt, EclFiles
-
 from pathlib import Path
+
+from ecl2df import satfunc, pvt, EclFiles
 
 
 def extract_pvt(case_loc):
@@ -14,7 +14,7 @@ def extract_relperm(case_loc):
 
 
 def extract_size(case_loc):
-    x_files = Path(case_loc).rglob(f"*.X*")
+    x_files = Path(case_loc).rglob("*.X*")
     count = 0
     min = 10000000
     max = -1

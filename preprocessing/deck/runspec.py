@@ -1,5 +1,6 @@
 import numpy as np
 from ecl2df import EclFiles
+
 from preprocessing.deck.section import get_includes
 
 
@@ -41,8 +42,4 @@ def preprocess_dimens(ecldeck):
 
 
 def find_keyword(ecldeck, keyword):
-    try:
-        ecldeck[keyword]
-        return True
-    except:
-        return False
+    return hasattr(ecldeck, "__contains__") and keyword in ecldeck

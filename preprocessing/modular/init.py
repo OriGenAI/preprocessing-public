@@ -79,5 +79,5 @@ def preprocess(init, endpoint=False):
 def get_keyword(keyword, init_file):
     try:
         return init_file.iget_named_kw(keyword, 0).numpy_copy()
-    except:
+    except BaseException:
         return np.empty(1)

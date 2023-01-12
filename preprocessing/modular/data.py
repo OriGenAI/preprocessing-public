@@ -1,9 +1,8 @@
-import numpy as np
-import pandas as pd
 import datetime
 
+import numpy as np
+import pandas as pd
 from ecl2df import EclFiles
-
 from ecl2df.common import (
     parse_opmio_deckrecord,
     parse_opmio_date_rec,
@@ -241,7 +240,7 @@ class WellSpecsProcessor:
         if "KEYWORD_IDX" in compdat_df.columns:
             compdat_df.drop(["KEYWORD_IDX"], axis=1, inplace=True)
 
-        if not "TYPE" in wcon_df.columns:
+        if "TYPE" not in wcon_df.columns:
             wcon_df["TYPE"] = np.nan
 
         return compdat_df, wcon_df, dates

@@ -1,23 +1,18 @@
 import datetime
 
 import ecl2df.summary as summary
-import ecl2df.wcon as wcon
-from ecl2df.compdat import deck2dfs
+import ecl2df.wcon as wcon  # noqa
+import pandas as pd
+from ecl.summary import EclSum
 from ecl2df import EclFiles
-
 from ecl2df.common import (
     parse_opmio_deckrecord,
     parse_opmio_date_rec,
     parse_opmio_tstep_rec,
 )
-
-from ecl.summary import EclSum
-from ecl2df.summary import df2eclsum
-
-import pandas as pd
+from ecl2df.compdat import deck2dfs  # noqa
 
 from preprocessing.utils import expand_dates, expand_wcon
-
 
 WCONKEYS = ["WCONHIST", "WCONINJE", "WCONINJH", "WCONPROD"]
 

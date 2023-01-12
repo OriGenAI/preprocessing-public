@@ -5,7 +5,7 @@ from ecl.eclfile import EclKW
 def get_keyword(keyword, grdecl):
     try:
         return EclKW.read_grdecl(grdecl, keyword).numpy_copy().astype(int)
-    except:
+    except BaseException:
         return np.empty(1)
 
 

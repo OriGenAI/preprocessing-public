@@ -70,6 +70,6 @@ jobs:
       - name: Push changes
         uses: ad-m/github-push-action@master
         with:
-          ssh-key: ${{ secrets.PROTEUS_PREPROCESSING_PUBLIC_SSH_DEPLOYMENT_KEY }}
+          ssh: true
           repository: OriGenAI/preprocessing-public
           branch: "dev"

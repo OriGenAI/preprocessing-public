@@ -40,6 +40,12 @@ jobs:
         run: |
           echo "proj_version=`poetry version -s`" >> $GITHUB_ENV
 
+      - name: Check if version has been bumped
+        if: ${{ env.release_proj_version == env.proj_version }}
+        run: |
+          echo "The last released version is the same as the new one, please update the version on project.py: ${{ env.release_proj_version }} vs ${{ env.proj_version }}"
+          exit 1
+
       - name: Run tests
         run: |
           virtualenv .env
@@ -48,12 +54,6 @@ jobs:
           poetry install
           poetry run poe test
           rm -rf .env
-
-      - name: Check if version has been bumped
-        if: ${{ env.release_proj_version == env.proj_version }}
-        run: |
-          echo "The last released version is the same as the new one, please update the version on project.py"
-          exit 1
 
       - name: Squash changes and store into release
         run: |
@@ -98,4 +98,4 @@ jobs:
         with:
           ssh: true
           repository: OriGenAI/preprocessing-public
-          branch: "dev"
+          branch: dev

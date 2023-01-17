@@ -1,15 +1,20 @@
+import os
+from datetime import datetime
+
 import numpy as np
+from ecl2df import EclFiles
+
 from preprocessing.deck.runspec import (
     preprocess_phases,
     preprocess_start,
     preprocess_dimens,
     preprocess,
 )
-from ecl2df import EclFiles
-from datetime import datetime
 
-
-data_file_loc = "tests/files/cases/training/SIMULATION_1/SIMULATION_1.DATA"
+data_file_loc = os.path.join(
+    os.path.realpath(os.path.join(os.path.dirname(__file__), "..", "..")),
+    "tests/files/cases/training/SIMULATION_1/SIMULATION_1.DATA",
+)
 data = EclFiles(data_file_loc)
 ecldeck = data.get_ecldeck()
 

@@ -2,6 +2,7 @@ from collections import OrderedDict
 from functools import reduce
 
 import numpy as np
+from ecl.eclfile import EclInitFile, EclKW
 from ecl.grid import EclGrid
 from ecl.summary import EclSum
 from ecl.well import WellInfo
@@ -17,14 +18,13 @@ def preprocess(
     data_file_loc,
     egrid_file_loc=None,
     smspec_file_loc=None,
+    init_file_loc=None,
     restart_file_loc=None,
     download_func=None,
     allow_missing_files=tuple(),
     base_dir=None,
 ):
     get_includes(data_file_loc, download_func, allow_missing_files=allow_missing_files, base_dir=base_dir)
-    data = EclFiles(data_file_loc)
-    ecldeck = data.get_ecldeck()
 
     if smspec_file_loc:
         smry = EclSum(str(smspec_file_loc))
@@ -76,6 +76,20 @@ def preprocess(
         injector_keywords = []
         field_keywords = []
 
+    if data_file_loc:
+        data = EclFiles(data_file_loc)
+        ecldeck = data.get_ecldeck()
+        data_keywords = sorted(set(x.name for x in ecldeck))
+    else:
+        data_keywords = []
+
+    if egrid_file_loc and init_file_loc:
+        grid = EclGrid(str(egrid_file_loc))
+        init = EclInitFile(grid, str(init_file_loc))
+        init_keywords = sorted(set(x.name for x in init if isinstance(x, EclKW)))
+    else:
+        init_keywords = []
+
     return {
         "phases": preprocess_phases(ecldeck),
         "start": preprocess_start(ecldeck),
@@ -85,7 +99,8 @@ def preprocess(
         "wnames": wnames,
         "wkeywords": {"injector": injector_keywords, "extractor": extractor_keywords},
         "fkeywords": sorted(field_keywords),
-        "data_keywords": sorted(set(x.name for x in ecldeck)),
+        "data_keywords": data_keywords,
+        "init_keywords": init_keywords,
     }
 
 

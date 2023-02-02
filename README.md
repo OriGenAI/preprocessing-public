@@ -16,7 +16,7 @@ This section details the file output format.
 - common.p : contains global information about the dataset such as min and max pressure values
 
 ### Per Case
-- grid_props.h5 : contains grid-specific properties such as dimensions and the active cell logic
+- grid.h5 : contains grid-specific properties such as dimensions and the active cell logic
 - init_props.h5 : contains initial keyword properties like transmissibility, porosity, permeability, etc
 - smry.p : contains well information and schedules, including well types (injector vs producer, etc)
 - runspec.p : contains runspec keyword information, such as phases
@@ -29,7 +29,7 @@ Details about each file in the global and per case sections
 #### common.p
 a pickle/serialized dictionary object containing the following
 - max_pressure : float - the largest pressure value among all cases
-- min_pressure : float - the smallest pressure value among all cases
+- min_pressure : float - the smallest pressure value among all casesruns
 
 #### grid_props.h5
 an h5 file containing the following datasets

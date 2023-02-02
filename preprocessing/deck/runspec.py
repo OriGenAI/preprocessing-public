@@ -10,7 +10,20 @@ from ecl2df import EclFiles
 
 from preprocessing.deck.section import get_includes
 
-SMSPEC_WELL_KEYWORDS = {"WOPR", "WOPRH", "WWPR", "WWPRH", "WGPR", "WWIR", "WBHP", "WBHPH"}
+SMSPEC_WELL_KEYWORDS = {
+    "WOPR",
+    "WOPRH",
+    "WWPR",
+    "WWPRH",
+    "WGPR",
+    "WWIR",
+    "WBHP",
+    "WBHPH",
+    "WTHP",
+    "WGPRH",
+    "WTHPH",
+    "WWIRH",
+}
 SMSPEC_FIELD_KEYWORDS = ["FOPR", "FWPR", "FGPR", "FOPRH", "FWPRH", "FGPRH"]
 
 
@@ -67,6 +80,17 @@ def preprocess(
                 SMSPEC_WELL_KEYWORDS,
             )
         )
+
+        # Discover implicit liquid keywords (_L__..) as a combination of oil and water [(_W__..) and (_O__..)]
+        for keyword_set in (extractor_keywords, injector_keywords):
+            liquid_keyword_candidates = set(f"{x[0]}_{x[2:]}" for x in extractor_keywords if x[1] in ("W", "O"))
+            for liquid_keyword_candidate in liquid_keyword_candidates:
+                include_liquid_keyword = (
+                    liquid_keyword_candidate.replace("_", "O") in keyword_set
+                    and liquid_keyword_candidate.replace("_", "W") in keyword_set
+                )
+                if include_liquid_keyword:
+                    keyword_set.append(liquid_keyword_candidate.replace("_", "L"))
 
         field_keywords = set(SMSPEC_FIELD_KEYWORDS).intersection(list(smry))
 

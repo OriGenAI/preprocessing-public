@@ -14,8 +14,6 @@ def _get_file_dataframe(data_file, name):
 
 def preprocess(dat_file, mapping):
     return {
-        keyword.get("name").lower(): _get_file_dataframe(
-            dat_file.get(keyword.get("source").lower()), keyword.get("name").lower()
-        )
+        keyword["name"].lower(): _get_file_dataframe(dat_file[keyword.get("name").lower()], keyword.get("name").lower())
         for keyword in mapping
     }

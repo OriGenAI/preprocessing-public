@@ -11,7 +11,7 @@ def extract_permeability(init):
 def extract_transmissibility(init):
     tranx = get_keyword("TRANX", init)
     trany = get_keyword("TRANY", init)
-    tranz = get_keyword("TRANX", init)
+    tranz = get_keyword("TRANZ", init)
     return tranx, trany, tranz
 
 

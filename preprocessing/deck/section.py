@@ -23,36 +23,7 @@ def find_section(input_file_loc, section_header, download_func=None, allow_missi
 
 
 def parse_dependency_path(file_absolute_path, dependency):
-    """Parse relative dependencies path to absolute ones
-    Arguments:
-        file_absolute_path {string} -- the absolute file path
-        dependency {string} -- the relative path of the dependency
-    Returns:
-        absolute_dependency {string} -- the absolute path of the dependency
-    """
-    file_name_expression = re.compile(r"/(?P<file_name>[^/]+\.[^/]+)$")
-
-    # Split directories by folders. Create a list with the folders
-    file_name = file_name_expression.search(file_absolute_path).group()
-    file_path = file_absolute_path.replace(file_name, "")
-    file_path_list = file_path.split("/")
-
-    # Count and remove previous directories: ../
-    previous_directories_expression = re.compile(r"(?P<previous_directories>(\.\./)|(\.\.\\))")
-    previous_directories = previous_directories_expression.finditer(dependency)
-    previous_directories = [
-        previous_directory.groupdict().get("previous_directories") for previous_directory in previous_directories
-    ]
-    number_of_previous_directories = len(previous_directories)
-    dependency_name = dependency.replace("../", "").replace("..\\", "")
-
-    # Remove `./` just in case
-    dependency_name = dependency_name.replace("./", "")
-
-    # Create absolute path
-    list_length = len(file_path_list)
-    file_path_list = file_path_list[: list_length - number_of_previous_directories]
-    return f"{'/'.join(file_path_list)}/{dependency_name}".replace("\\", "/")
+    return os.path.abspath(os.path.join(os.path.dirname(file_absolute_path), dependency))
 
 
 def find_includes(content, filepath, download_func=None, allow_missing_files=tuple(), base_dir=None):

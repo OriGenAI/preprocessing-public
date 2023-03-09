@@ -9,6 +9,8 @@ from ecl2df.common import (
     parse_opmio_tstep_rec,
 )
 from ecl2df.compdat import unrolldf
+import opm.io
+from pathlib import Path
 
 from preprocessing.utils import expand_dates, expand_wcon
 
@@ -31,6 +33,79 @@ COMPDAT_RENAMER = {
 WCONKEYS = ["WCONHIST", "WCONINJE", "WCONINJH", "WCONPROD"]
 
 
+def get_ecl(data):
+
+    section_list = [opm.io.parser.eclSectionType.SCHEDULE]
+
+    if Path(data._eclbase + ".DATA").is_file():
+        deckfile = data._eclbase + ".DATA"
+    else:
+        deckfile = data._eclbase
+    builtin = opm.io.Builtin()
+
+    kw_list = ["DIMENS", "GAS", "WATER", "OIL", "MULTOUT"]
+
+    OPMIOPARSER_RECOVERY = [
+        ("PARSE_RANDOM_SLASH", opm.io.action.warn),
+        ("*UNSUPPORTED*", opm.io.action.warn),
+        ("*MISSING*", opm.io.action.warn),
+        ("*UNKNOWN*", opm.io.action.warn),
+        ("PARSE_EXTRA_RECORDS", opm.io.action.ignore),
+        ("PARSE_UNKNOWN_KEYWORD", opm.io.action.ignore),
+        ("PARSE_RANDOM_TEXT", opm.io.action.ignore),
+        ("PARSE_RANDOM_SLASH", opm.io.action.ignore),
+        ("PARSE_MISSING_DIMS_KEYWORD", opm.io.action.ignore),
+        ("PARSE_EXTRA_DATA", opm.io.action.ignore),
+        ("PARSE_MISSING_SECTIONS", opm.io.action.ignore),
+        ("PARSE_MISSING_INCLUDE", opm.io.action.ignore),
+        ("PARSE_LONG_KEYWORD", opm.io.action.ignore),
+        ("PARSE_WGNAME_SPACE", opm.io.action.ignore),
+        ("PARSE_INVALID_KEYWORD_COMBINATION", opm.io.action.ignore),
+        ("UNIT_SYSTEM_MISMATCH", opm.io.action.ignore),
+        ("RUNSPEC_NUMWELLS_TOO_LARGE", opm.io.action.ignore),
+        ("RUNSPEC_CONNS_PER_WELL_TOO_LARGE", opm.io.action.ignore),
+        ("RUNSPEC_NUMGROUPS_TOO_LARGE", opm.io.action.ignore),
+        ("RUNSPEC_GROUPSIZE_TOO_LARGE", opm.io.action.ignore),
+        ("UNSUPPORTED_INITIAL_THPRES", opm.io.action.ignore),
+        ("UNSUPPORTED_TERMINATE_IF_BHP", opm.io.action.ignore),
+        ("INTERNAL_ERROR_UNINITIALIZED_THPRES", opm.io.action.ignore),
+        ("SUMMARY_UNKNOWN_WELL", opm.io.action.ignore),
+        ("SUMMARY_UNKNOWN_GROUP", opm.io.action.ignore),
+        ("SUMMARY_UNKNOWN_NODE", opm.io.action.ignore),
+        ("SUMMARY_UNKNOWN_AQUIFER", opm.io.action.ignore),
+        ("SUMMARY_UNHANDLED_KEYWORD", opm.io.action.ignore),
+        ("SUMMARY_UNDEFINED_UDQ", opm.io.action.ignore),
+        ("SUMMARY_UDQ_MISSING_UNIT", opm.io.action.ignore),
+        ("SUMMARY_INVALID_FIPNUM", opm.io.action.ignore),
+        ("SUMMARY_EMPTY_REGION", opm.io.action.ignore),
+        ("SUMMARY_REGION_TOO_LARGE", opm.io.action.ignore),
+        ("RPT_MIXED_STYLE", opm.io.action.ignore),
+        ("RPT_UNKNOWN_MNEMONIC", opm.io.action.ignore),
+        ("SCHEDULE_INVALID_NAME", opm.io.action.ignore),
+        ("ACTIONX_ILLEGAL_KEYWORD", opm.io.action.ignore),
+        ("SIMULATOR_KEYWORD_NOT_SUPPORTED", opm.io.action.ignore),
+        ("SIMULATOR_KEYWORD_NOT_SUPPORTED_CRITICAL", opm.io.action.ignore),
+        ("SIMULATOR_KEYWORD_ITEM_NOT_SUPPORTED", opm.io.action.ignore),
+        ("SIMULATOR_KEYWORD_ITEM_NOT_SUPPORTED_CRITICAL", opm.io.action.ignore),
+        ("UDQ_PARSE_ERROR", opm.io.action.ignore),
+        ("UDQ_TYPE_ERROR", opm.io.action.ignore),
+        ("SCHEDULE_GROUP_ERROR", opm.io.action.ignore),
+        ("SCHEDULE_IGNORED_GUIDE_RATE", opm.io.action.ignore),
+        ("SCHEDULE_COMPSEG_INVALID", opm.io.action.ignore),
+        ("SCHEDULE_COMPSEGS_NOT_SUPPORTED", opm.io.action.ignore),
+    ]
+
+    parseContext = opm.io.ParseContext(OPMIOPARSER_RECOVERY)
+    parser = opm.io.Parser()
+
+    for kw in kw_list:
+        parser.add_keyword(builtin[kw])
+
+    deck = parser.parse(deckfile, parseContext, section_list)
+
+    return deck
+
+
 class WellSpecsProcessor:
     def __init__(self, data_path):
         self.data = EclFiles(data_path)
@@ -38,7 +113,7 @@ class WellSpecsProcessor:
         self.compdat_frame, self.wcon_frame, self.dates = self.read_keywords(self.data)
 
         # Extract helper variables
-        dimens = self.data.get_ecldeck()["DIMENS"][0]
+        dimens = get_ecl(self.data)["DIMENS"][0]
         self.dims = np.array([dimens[2].value, dimens[0].value, dimens[1].value])
 
     def process(self):
@@ -118,8 +193,7 @@ class WellSpecsProcessor:
             dates: list of timestep dates
         """
 
-        deck = deck.get_ecldeck()
-
+        deck = get_ecl(self.data)
         welspecs = {}
         compdatrecords = []
         complumprecords = []

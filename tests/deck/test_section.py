@@ -1,4 +1,5 @@
 import os
+
 from preprocessing.deck.section import scan_file, find_includes, find_section
 
 
@@ -64,7 +65,6 @@ def test_find_includes():
 def test_find_section():
     data_file_loc = "tests/files/cases/training/SIMULATION_1/SIMULATION_1.DATA"
     section = find_section(data_file_loc, "RUNSPEC")
-    print(section)
     good_result = """
 
 TITLE

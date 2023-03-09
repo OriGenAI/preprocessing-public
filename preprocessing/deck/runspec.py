@@ -5,10 +5,9 @@ import numpy as np
 from ecl.eclfile import EclInitFile, EclKW
 from ecl.grid import EclGrid
 from ecl.summary import EclSum
-from ecl.well import WellInfo
 from ecl2df import EclFiles
-
 from preprocessing.deck.section import get_includes
+from preprocessing.modular.data import WellSpecsProcessor
 
 SMSPEC_WELL_KEYWORDS = {
     "WOPR",
@@ -32,28 +31,23 @@ def preprocess(
     egrid_file_loc=None,
     smspec_file_loc=None,
     init_file_loc=None,
-    restart_file_loc=None,
     download_func=None,
     allow_missing_files=tuple(),
     base_dir=None,
 ):
     get_includes(data_file_loc, download_func, allow_missing_files=allow_missing_files, base_dir=base_dir)
 
+    preprocessor = WellSpecsProcessor(data_file_loc)
+    data = preprocessor.process()
+
     if smspec_file_loc:
         smry = EclSum(str(smspec_file_loc))
         wnames = OrderedDict((wname, {"injector": None, "type": None}) for wname in smry.wells())
-
-        if egrid_file_loc and restart_file_loc:
-            grid = EclGrid(str(egrid_file_loc))
-            winfo = WellInfo(grid, str(restart_file_loc))
-
-            for wname, wprops in wnames.items():
-                if wname in winfo:
-                    wtimeline = winfo[wname]
-                    wstate = wtimeline and next(iter(wtimeline), None)
-                    if wstate:
-                        wprops["type"] = str(wstate.wellType().name)
-                        wprops["injector"] = "INJECTOR" in wprops["type"].upper()
+        for wname, wprops in wnames.items():
+            if wname in [x.upper() for x in data["wells"].keys()]:
+                well_kw = next(filter(lambda x: x.upper() == wname, data["wells"]))
+                wprops["type"] = data["wells"][well_kw]["well_type"]
+                wprops["injector"] = "INJECTOR" in wprops["type"].upper()
 
         available_keywords_by_well = reduce(
             lambda d, p: d.setdefault(p[0], set()).add(p[1]) or d,
@@ -100,9 +94,83 @@ def preprocess(
         injector_keywords = []
         field_keywords = []
 
+    def get_ecl(data):
+        import opm.io
+        from pathlib import Path
+
+        section_list = [opm.io.parser.eclSectionType.SCHEDULE]
+
+        if Path(data._eclbase + ".DATA").is_file():
+            deckfile = data._eclbase + ".DATA"
+        else:
+            deckfile = data._eclbase
+        builtin = opm.io.Builtin()
+
+        kw_list = ["START", "ENDSCALE", "MULTOUT", "DIMENS", "GAS", "OIL", "WATER"]
+
+        OPMIOPARSER_RECOVERY = [
+            ("PARSE_RANDOM_SLASH", opm.io.action.warn),
+            ("*UNSUPPORTED*", opm.io.action.warn),
+            ("*MISSING*", opm.io.action.warn),
+            ("*UNKNOWN*", opm.io.action.warn),
+            ("PARSE_EXTRA_RECORDS", opm.io.action.ignore),
+            ("PARSE_UNKNOWN_KEYWORD", opm.io.action.ignore),
+            ("PARSE_RANDOM_TEXT", opm.io.action.ignore),
+            ("PARSE_RANDOM_SLASH", opm.io.action.ignore),
+            ("PARSE_MISSING_DIMS_KEYWORD", opm.io.action.ignore),
+            ("PARSE_EXTRA_DATA", opm.io.action.ignore),
+            ("PARSE_MISSING_SECTIONS", opm.io.action.ignore),
+            ("PARSE_MISSING_INCLUDE", opm.io.action.ignore),
+            ("PARSE_LONG_KEYWORD", opm.io.action.ignore),
+            ("PARSE_WGNAME_SPACE", opm.io.action.ignore),
+            ("PARSE_INVALID_KEYWORD_COMBINATION", opm.io.action.ignore),
+            ("UNIT_SYSTEM_MISMATCH", opm.io.action.ignore),
+            ("RUNSPEC_NUMWELLS_TOO_LARGE", opm.io.action.ignore),
+            ("RUNSPEC_CONNS_PER_WELL_TOO_LARGE", opm.io.action.ignore),
+            ("RUNSPEC_NUMGROUPS_TOO_LARGE", opm.io.action.ignore),
+            ("RUNSPEC_GROUPSIZE_TOO_LARGE", opm.io.action.ignore),
+            ("UNSUPPORTED_INITIAL_THPRES", opm.io.action.ignore),
+            ("UNSUPPORTED_TERMINATE_IF_BHP", opm.io.action.ignore),
+            ("INTERNAL_ERROR_UNINITIALIZED_THPRES", opm.io.action.ignore),
+            ("SUMMARY_UNKNOWN_WELL", opm.io.action.ignore),
+            ("SUMMARY_UNKNOWN_GROUP", opm.io.action.ignore),
+            ("SUMMARY_UNKNOWN_NODE", opm.io.action.ignore),
+            ("SUMMARY_UNKNOWN_AQUIFER", opm.io.action.ignore),
+            ("SUMMARY_UNHANDLED_KEYWORD", opm.io.action.ignore),
+            ("SUMMARY_UNDEFINED_UDQ", opm.io.action.ignore),
+            ("SUMMARY_UDQ_MISSING_UNIT", opm.io.action.ignore),
+            ("SUMMARY_INVALID_FIPNUM", opm.io.action.ignore),
+            ("SUMMARY_EMPTY_REGION", opm.io.action.ignore),
+            ("SUMMARY_REGION_TOO_LARGE", opm.io.action.ignore),
+            ("RPT_MIXED_STYLE", opm.io.action.ignore),
+            ("RPT_UNKNOWN_MNEMONIC", opm.io.action.ignore),
+            ("SCHEDULE_INVALID_NAME", opm.io.action.ignore),
+            ("ACTIONX_ILLEGAL_KEYWORD", opm.io.action.ignore),
+            ("SIMULATOR_KEYWORD_NOT_SUPPORTED", opm.io.action.ignore),
+            ("SIMULATOR_KEYWORD_NOT_SUPPORTED_CRITICAL", opm.io.action.ignore),
+            ("SIMULATOR_KEYWORD_ITEM_NOT_SUPPORTED", opm.io.action.ignore),
+            ("SIMULATOR_KEYWORD_ITEM_NOT_SUPPORTED_CRITICAL", opm.io.action.ignore),
+            ("UDQ_PARSE_ERROR", opm.io.action.ignore),
+            ("UDQ_TYPE_ERROR", opm.io.action.ignore),
+            ("SCHEDULE_GROUP_ERROR", opm.io.action.ignore),
+            ("SCHEDULE_IGNORED_GUIDE_RATE", opm.io.action.ignore),
+            ("SCHEDULE_COMPSEG_INVALID", opm.io.action.ignore),
+            ("SCHEDULE_COMPSEGS_NOT_SUPPORTED", opm.io.action.ignore),
+        ]
+
+        parseContext = opm.io.ParseContext(OPMIOPARSER_RECOVERY)
+        parser = opm.io.Parser()
+
+        for kw in kw_list:
+            parser.add_keyword(builtin[kw])
+
+        deck = parser.parse(deckfile, parseContext, section_list)
+
+        return deck
+
     if data_file_loc:
         data = EclFiles(data_file_loc)
-        ecldeck = data.get_ecldeck()
+        ecldeck = get_ecl(data)
         data_keywords = sorted(set(x.name for x in ecldeck))
     else:
         data_keywords = []

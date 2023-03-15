@@ -1,12 +1,14 @@
 [tool.poetry]
 name = "proteus-preprocessing"
-version = "0.2.8"
+version = "0.2.9"
 description = ""
 authors = []
 packages = [
     { include = "preprocessing/modular" },
     { include = "preprocessing/deck" },
     { include = "preprocessing/utils" },
+    { include = "preprocessing/patches.py" },
+    { include = "preprocessing/__init__.py" },
 ]
 
 [tool.poetry.dependencies]
@@ -49,7 +51,7 @@ flake8 = "^4.0.1"
     [tool.poe.tasks.pytest]
         cmd="pytest tests"
         help="Run python tests"
-    
+
     [tool.poe.tasks.black_format]
         cmd="""
             black . --line-length=120

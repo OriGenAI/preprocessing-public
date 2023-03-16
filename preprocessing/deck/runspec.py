@@ -6,6 +6,7 @@ from ecl.eclfile import EclInitFile, EclKW
 from ecl.grid import EclGrid
 from ecl.summary import EclSum
 from ecl2df import EclFiles
+
 from preprocessing.deck.section import get_includes
 from preprocessing.modular.data import WellSpecsProcessor
 
@@ -98,7 +99,7 @@ def preprocess(
         import opm.io
         from pathlib import Path
 
-        section_list = [opm.io.parser.eclSectionType.SCHEDULE]
+        section_list = [opm.io.parser.eclSectionType.SCHEDULE, opm.io.parser.eclSectionType.GRID]
 
         if Path(data._eclbase + ".DATA").is_file():
             deckfile = data._eclbase + ".DATA"

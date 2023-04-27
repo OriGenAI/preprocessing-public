@@ -186,6 +186,7 @@ def preprocess(
     return {
         "phases": preprocess_phases(ecldeck),
         "start": preprocess_start(ecldeck),
+        "timestep": preprocess_timestep(smry),
         "endscale": find_keyword(ecldeck, "ENDSCALE"),
         "multout": find_keyword(ecldeck, "MULTOUT"),
         "dimens": preprocess_dimens(ecldeck),
@@ -203,6 +204,17 @@ def preprocess_start(ecldeck):
     try:
         start = str(ecldeck["START"][0]).strip(" \n/")
         return datetime.strptime(start, "%d '%b' %Y")
+    except Exception:
+        return False
+
+
+def preprocess_timestep(smry):
+    from datetime import timedelta
+
+    try:
+        data = smry["TIMESTEP"]
+        unit = data.unit.lower()
+        return timedelta(**{unit: int(data[0].value)})
     except Exception:
         return False
 

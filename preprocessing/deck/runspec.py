@@ -94,6 +94,7 @@ def preprocess(
         extractor_keywords = []
         injector_keywords = []
         field_keywords = []
+        smry = None
 
     def get_ecl(data):
         import opm.io
@@ -216,7 +217,7 @@ def preprocess_timestep(smry):
         unit = data.unit.lower()
         return timedelta(**{unit: int(data[0].value)})
     except Exception:
-        return False
+        return None
 
 
 def preprocess_phases(ecldeck):

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "proteus-preprocessing"
-version = "0.2.13"
+version = "0.2.14"
 description = ""
 authors = []
 packages = [
@@ -17,10 +17,11 @@ python-json-logger = "^2.0.1"
 tqdm = "^4.61.0"
 tabulate = "^0.8.9"
 readchar = "^3.0.4"
-libecl = "^2.13.1"
+libecl = "2.13.2"
 h5py = "^3.6.0"
 pandas = "^1.4.1"
 ecl2df = "0.16.1"
+opm = "2022.4"
 tables = "^3.7.0"
 
 [tool.poetry.dev-dependencies]

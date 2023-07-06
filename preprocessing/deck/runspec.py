@@ -7,7 +7,7 @@ from ecl.grid import EclGrid
 from ecl.summary import EclSum
 from ecl2df import EclFiles
 
-from preprocessing.deck.section import get_includes
+from preprocessing.deck.section import find_includes
 from preprocessing.modular.data import WellSpecsProcessor
 
 SMSPEC_WELL_KEYWORDS = {
@@ -29,14 +29,13 @@ SMSPEC_FIELD_KEYWORDS = ["FOPR", "FWPR", "FGPR", "FOPRH", "FWPRH", "FGPRH"]
 
 def preprocess(
     data_file_loc,
-    egrid_file_loc=None,
-    smspec_file_loc=None,
-    init_file_loc=None,
-    download_func=None,
+    egrid_file_loc,
+    smspec_file_loc,
+    init_file_loc,
+    download_func,
     allow_missing_files=tuple(),
-    base_dir=None,
 ):
-    get_includes(data_file_loc, download_func, allow_missing_files=allow_missing_files, base_dir=base_dir)
+    find_includes(data_file_loc, download_func, allow_missing_files=allow_missing_files)
 
     preprocessor = WellSpecsProcessor(data_file_loc)
     data = preprocessor.process()

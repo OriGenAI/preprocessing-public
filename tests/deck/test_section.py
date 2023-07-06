@@ -54,17 +54,15 @@ MULTOUT
 
 def test_find_includes():
     data_file_loc = "tests/files/cases/training/SIMULATION_1/SIMULATION_1.DATA"
-    with open(data_file_loc, "r") as f:
-        content = f.read()
     abs_path = os.path.abspath(data_file_loc)
-    result = find_includes(content, abs_path)
-    good_list = [f"{os.getcwd()}/tests/files/cases/include/SHIFTTOP.GRDECL"]
+    result = find_includes(data_file_loc, lambda f, p: os.path.normpath(os.path.join(p, f)))
+    good_list = ['tests/files/cases/include/SHIFTTOP.GRDECL']
     assert good_list == result
 
 
 def test_find_section():
     data_file_loc = "tests/files/cases/training/SIMULATION_1/SIMULATION_1.DATA"
-    section = find_section(data_file_loc, "RUNSPEC")
+    section = find_section(data_file_loc, "RUNSPEC", lambda f, p: os.path.normpath(os.path.join(p, f)))
     good_result = """
 
 TITLE
@@ -105,19 +103,3 @@ MULTOUT
 
 """
     assert section == good_result
-
-
-def test_find_section_with_download_func():
-    data_file_loc = "tests/files/cases/training/SIMULATION_1/SIMULATION_1.DATA"
-    section_header = "RUNSPEC"
-    test_path = "tests/files/cases/training/SIMULATION_1/my_file"
-
-    def download_func(relative_path, actual_path):
-        open(test_path, "a").close()
-
-    find_section(data_file_loc, section_header, download_func)
-
-    assert os.path.exists(test_path)
-
-    os.remove(test_path)
-    assert not os.path.exists(test_path)

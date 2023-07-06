@@ -2,18 +2,12 @@ import os
 import re
 
 
-def get_includes(input_file_loc, download_func=None, allow_missing_files=tuple(), base_dir=None):
-    with open(input_file_loc, "r") as data_file:
-        content = data_file.read()
-    # recursively finds the include files
-    abs_path = os.path.abspath(input_file_loc)
-    return find_includes(content, abs_path, download_func, allow_missing_files=allow_missing_files, base_dir=base_dir)
+def get_includes(input_file_loc, download_func, allow_missing_files=tuple()):
+    return find_includes(input_file_loc, download_func, allow_missing_files=allow_missing_files)
 
 
-def find_section(input_file_loc, section_header, download_func=None, allow_missing_files=tuple(), base_dir=None):
-    file_list = [input_file_loc] + get_includes(
-        input_file_loc, download_func, allow_missing_files=allow_missing_files, base_dir=base_dir
-    )
+def find_section(input_file_loc, section_header, download_func, allow_missing_files=tuple()):
+    file_list = [input_file_loc] + get_includes(input_file_loc, download_func, allow_missing_files=allow_missing_files)
 
     for file_loc in file_list:
         with open(file_loc, "r") as f:
@@ -26,32 +20,33 @@ def parse_dependency_path(file_absolute_path, dependency):
     return os.path.abspath(os.path.join(os.path.dirname(file_absolute_path), dependency))
 
 
-def find_includes(content, filepath, download_func=None, allow_missing_files=tuple(), base_dir=None):
+def find_includes(input_file_loc, download_func, allow_missing_files=tuple()):
+    with open(input_file_loc, "r") as data_file:
+        content = data_file.read()
+
     include_expression_re = re.compile(r"\s*INCLUDE[^\'\/]+'(?P<path>[^']+)'")
     inc_found = include_expression_re.finditer(content)
     includes_list = [inc.groupdict().get("path") for inc in inc_found]
+
     fixed_includes_list = []
     for include_file_loc in includes_list:
-        actual_path = parse_dependency_path(filepath, include_file_loc)
-        fixed_includes_list.append(actual_path)
 
         try:
-            if base_dir and not actual_path.startswith(base_dir):
-                raise FileNotFoundError(f"File {actual_path} is outside sandboxed base dir {base_dir}")
+            downloaded_path = download_func(include_file_loc, os.path.dirname(input_file_loc))
 
-            if download_func:
-                relative_path = actual_path.replace(base_dir, "") if base_dir else remove_tmp_folder(actual_path)
-                download_func(relative_path, actual_path)
+            if downloaded_path is None:
+                raise FileNotFoundError(f'Include file "{include_file_loc}" not found')
 
-            with open(actual_path, "r") as include_file:
-                content = include_file.read()
+            fixed_includes_list.append(downloaded_path)
+
+            fixed_includes_list += find_includes(
+                downloaded_path, download_func, allow_missing_files=allow_missing_files
+            )
         except FileNotFoundError as e:
-            relative_path_parent = filepath.replace(base_dir, "") if base_dir else remove_tmp_folder(filepath)
-            relative_path_parent = relative_path_parent or filepath
-            not_found_file = os.path.realpath(actual_path)
+            not_found_file = include_file_loc
 
             error_message = (
-                f'File "{relative_path_parent}" includes subfile '
+                f'File "{input_file_loc}" includes subfile '
                 f"{include_file_loc}, but the file was not found. Reason: {str(e)}"
             )
 
@@ -68,14 +63,10 @@ def find_includes(content, filepath, download_func=None, allow_missing_files=tup
                     break
 
             if skip:
-                print(f"{error_message}. skipping because it was explicitly whitelisted.")
+                print(f"\n{error_message}. skipping because it was explicitly whitelisted.")
                 continue
             else:
                 raise FileNotFoundError(error_message)
-
-        fixed_includes_list += find_includes(
-            content, actual_path, download_func, allow_missing_files=allow_missing_files, base_dir=base_dir
-        )
 
     return fixed_includes_list
 
@@ -89,12 +80,3 @@ def scan_file(content, section_header):
     section_content = next(section_found)
     if section_content is not None:
         return section_content
-
-
-def remove_tmp_folder(path):
-    # FIXME: this method of obtaining relative paths is hideous
-    path_expression_re = re.compile(r"^\/tmp\/tmp[^\/]*(?P<path>.*)$")
-    try:
-        return next(path_expression_re.finditer(path)).groupdict().get("path")
-    except StopIteration:
-        return None

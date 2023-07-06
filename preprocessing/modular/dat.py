@@ -12,7 +12,7 @@ def _get_file_dataframe(data_file, name):
         return pd.DataFrame(data, columns=colArray)
 
 
-def preprocess(dat_file, mapping):
-    return {
-        keyword["name"]: _get_file_dataframe(dat_file[keyword.get("name")], keyword.get("name")) for keyword in mapping
-    }
+def preprocess(dat_files):
+    for source, col_name in dat_files.items():
+        df = _get_file_dataframe(source, col_name)
+        yield source, col_name, df

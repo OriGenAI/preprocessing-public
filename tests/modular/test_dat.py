@@ -7,6 +7,7 @@ def test_grdecl_preprocessing_module():
         "tests/files/permx.dat",
         "tests/files/VCL.dat",
     ]
+
     mappings = [
         {"name": "PORO", "source": "PORO"},
         {"name": "PERMX", "source": "permx"},
@@ -15,16 +16,15 @@ def test_grdecl_preprocessing_module():
 
     dat_files = {}
 
-    for keyword in mappings:
-        file = next(filter(lambda file: keyword["source"] in file, dat_files_loc), None)
-        if file:
-            dat_files[keyword["name"]] = file
+    for file_name, mapping in zip(dat_files_loc, mappings):
+        dat_files[file_name] = mapping["name"]
 
-    props = preprocess_dat_files(dat_files, mappings)
+    props = {}
+    for _, col_name, df in preprocess_dat_files(dat_files):
+        props[col_name] = df
 
-    prop_keys = props.keys()
     goal = ["PORO", "PERMX", "V-CLAI"]
-    assert all([x in goal for x in prop_keys])
+    assert all([x in goal for x in  props.keys()])
 
     assert props["PORO"].shape[0] > 0
     assert props["PORO"].shape[1] == 5

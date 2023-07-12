@@ -1,11 +1,12 @@
 [tool.poetry]
 name = "proteus-preprocessing"
-version = "0.4.0"
+version = "0.4.1"
 description = ""
 authors = []
 packages = [
     { include = "preprocessing/modular" },
     { include = "preprocessing/deck" },
+    { include = "preprocessing/facilities" },
     { include = "preprocessing/utils" },
     { include = "preprocessing/patches.py" },
     { include = "preprocessing/__init__.py" },

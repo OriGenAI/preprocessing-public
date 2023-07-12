@@ -24,7 +24,7 @@ def test_grdecl_preprocessing_module():
         props[col_name] = df
 
     goal = ["PORO", "PERMX", "V-CLAI"]
-    assert all([x in goal for x in  props.keys()])
+    assert all([x in goal for x in props.keys()])
 
     assert props["PORO"].shape[0] > 0
     assert props["PORO"].shape[1] == 5

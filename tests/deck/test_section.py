@@ -56,7 +56,7 @@ def test_find_includes():
     data_file_loc = "tests/files/cases/training/SIMULATION_1/SIMULATION_1.DATA"
     abs_path = os.path.abspath(data_file_loc)
     result = find_includes(data_file_loc, lambda f, p: os.path.normpath(os.path.join(p, f)))
-    good_list = ['tests/files/cases/include/SHIFTTOP.GRDECL']
+    good_list = ["tests/files/cases/include/SHIFTTOP.GRDECL"]
     assert good_list == result
 
 

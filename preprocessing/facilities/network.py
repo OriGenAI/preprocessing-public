@@ -1,11 +1,12 @@
 import json
-import os
+
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 
-def preprocess(download_func, output_source, network, **_):
+def preprocess(download_func, output_source, network, save=True, **_):
     df = get_raw_network_dataframe(download_func, output_source, network)
 
     unique_counts = df.groupby(["Elevation", "Lat", "Long"]).transform("nunique")
@@ -23,16 +24,19 @@ def preprocess(download_func, output_source, network, **_):
             [len(df[df["BranchEquipment"] == b]["MeasuredDistance"].values) for b in network[n + 1]["branches"]]
         ).tolist()
 
-    save_processed_network_json(output_source, network)
+    if save:
+        save_processed_network_json(output_source, network)
+
+    return network
 
 
 def get_raw_network_dataframe(download_func, output_source, network):
     download_func(network, output_source.uri)
-    input_file_name = os.path.join(output_source.uri, network)
+    input_file_name = Path(output_source.uri) / network
     return pd.read_csv(input_file_name)
 
 
 def save_processed_network_json(output_source, network):
-    output_file_name = os.path.join(output_source.uri, "network.json")
+    output_file_name = Path(output_source.uri) / "network.json"
     with open(output_file_name, "w") as output_file:
         json.dump(network, output_file)

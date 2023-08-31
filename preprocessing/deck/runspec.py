@@ -35,7 +35,7 @@ def preprocess(
     download_func,
     allow_missing_files=tuple(),
 ):
-    find_includes(data_file_loc, download_func, allow_missing_files=allow_missing_files)
+    find_includes(data_file_loc, download_func, data_file_loc, allow_missing_files=allow_missing_files)
 
     preprocessor = WellSpecsProcessor(data_file_loc)
     data = preprocessor.process()

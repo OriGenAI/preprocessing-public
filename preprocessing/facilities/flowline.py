@@ -1,7 +1,9 @@
+from itertools import chain, repeat
+from multiprocessing.pool import ThreadPool
 from pathlib import Path
 
-import h5py
 import numpy as np
+import pandas as pd
 
 from preprocessing.facilities.network import preprocess as preprocess_network
 
@@ -12,63 +14,80 @@ VARIABLES = [
     "Watercut",
     "VolumeFlowrateOilInSitu",
     "VolumeFlowrateLiquidInSitu",
+    "TotalDistance",
 ]
 
 
-def preprocess(download_func, output_source, input_files, **_):
-    network_file_name = input_files[0]  # network.csv
-    input_file_names = input_files[1:]  # (cases/{group}/SIMULATION_{case}/flowline.csv, ...)
-    output_sub_directory = Path(input_file_names[0]).parents[1]  # cases/{group}  # noqa
+def preprocess(
+    download_func,
+    output_source,
+    network,  # network.csv
+    flowlines,  # (cases/{group}/SIMULATION_{case}/flowline.csv, ...)
+    workers=None,
+    progress=None,
+    proc_name=None,
+    **_,
+):
+    network_file = network
+    flowline_files = flowlines
+    output_sub_directory = Path(flowline_files[0]).parents[1]  # cases/{group}  # noqa
 
-    network = preprocess_network(download_func, output_source, network_file_name, save=False)
+    networks = preprocess_network(download_func, output_source, network_file, trust_existing=True)
 
-    download_raw_flowline_csvs(download_func, output_source, input_file_names)
+    branches = pd.DataFrame(
+        list(
+            chain(
+                *(
+                    zip(x["branches"].keys(), repeat(int(n), len(x["branches"])))
+                    for n, x in networks["networks"].items()
+                )
+            )
+        ),
+        columns=["branch", "network"],
+    )
+    branches.set_index(["branch"], inplace=True)
 
-    output_networks = []
-    for n in range(len(network)):
-        network_names = network[list(network.keys())[n]]["branches"]
-        outputs = []
-
-        for variable in VARIABLES:
-            outputs_array = []
-
-            for input_file in input_file_names:
-                input_file_name = Path(output_source.uri) / input_file
-                data = np.loadtxt(input_file_name, delimiter=",", dtype=str)
-                values = []
-
-                for name_cluster in network_names:
-                    values.append(
-                        data[data[:, 2] == name_cluster, np.where(data[0, :] == variable)[0][0]].astype(np.float32)
-                    )
-
-                outputs_array.append(np.concatenate(values))
-
-            try:
-                outputs.append(np.stack(outputs_array))
-
-            except Exception:
-                for i in range(len(input_file_names)):
-                    if len(outputs_array[i]) != len(outputs_array[0]):
-                        print(
-                            f"Error length does not match in simulation {i} it should be {len(outputs_array[0])}. "
-                            f"However, the length is {len(outputs_array[i])}"
-                        )
-
-        output_networks.append(np.moveaxis(np.stack(outputs), 0, 1))
-
-    save_processed_flowline_h5(output_source, output_sub_directory, output_networks)
-
-    return output_networks
-
-
-def download_raw_flowline_csvs(download_func, output_source, input_files):
-    for input_file in input_files:
+    def _download_file_data(args):
+        input_file_idx, input_file = args
         download_func(input_file, output_source.uri)
+        input_file_name = Path(output_source.uri) / input_file
 
+        raw_file_data = pd.read_csv(input_file_name, delimiter=",", dtype=str)
 
-def save_processed_flowline_h5(output_source, output_directory, output_networks):
-    output_file_name = Path(output_source.uri) / output_directory / "flowline.h5"
-    with h5py.File(output_file_name, "w") as output_file:
-        for i in range(len(output_networks)):
-            output_file.create_dataset(f"network_{i}", data=output_networks[i])
+        # raw_file_data.sort_values(['network', 'BranchEquipment', 'TotalDistance'], inplace=True)
+
+        # Add check here only network per branch
+
+        to_retrieve_networks = raw_file_data["BranchEquipment"].isin(branches.index)
+        branch_data = raw_file_data[to_retrieve_networks][VARIABLES].astype(np.float32)
+        branch_data["branch"] = raw_file_data[to_retrieve_networks]["BranchEquipment"]
+        branch_data = branch_data.join(branches, how="left", on=["branch"])
+        branch_data["case_no"] = input_file_idx
+        branch_data.sort_values(
+            ["case_no", "network", "branch", "TotalDistance"], ascending=[True, True, True, True], inplace=True
+        )
+
+        return input_file_idx, branch_data
+
+    data_by_file_idx = {}
+    max_proc_idx = 0
+    with ThreadPool(processes=(workers or 4)) as pool:
+        branch_datas = pool.imap(_download_file_data, enumerate(flowline_files, start=1))
+        for input_file_idx, branch_data in branch_datas:
+            data_by_file_idx[input_file_idx] = branch_data
+
+            if progress:
+                max_cur_idx = max(input_file_idx, max_proc_idx)
+                if max_cur_idx > max_proc_idx:
+                    max_proc_idx = max_cur_idx
+
+                    if proc_name:
+                        progress.set_description(proc_name)
+
+                    progress.set_postfix({"process": "flowline", "input": f"{max_proc_idx}/{len(flowline_files)}"})
+
+    merged_dataframe = pd.concat(chain(data_by_file_idx[idx] for idx in sorted(data_by_file_idx.keys())))
+
+    merged_dataframe.to_hdf(output_source.uri / output_sub_directory / "flowline.h5", key="flowline")
+
+    return merged_dataframe

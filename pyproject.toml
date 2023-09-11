@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "proteus-preprocessing"
-version = "0.4.3"
+version = "0.4.5"
 description = ""
 authors = []
 packages = [
@@ -24,6 +24,7 @@ pandas = "^1.4.1"
 ecl2df = "0.16.1"
 opm = "2022.4"
 tables = "^3.7.0"
+scikit-network="^0.31.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.5"

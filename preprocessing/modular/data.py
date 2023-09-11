@@ -1,6 +1,8 @@
 import datetime
+from pathlib import Path
 
 import numpy as np
+import opm.io
 import pandas as pd
 from ecl2df import EclFiles
 from ecl2df.common import (
@@ -9,8 +11,6 @@ from ecl2df.common import (
     parse_opmio_tstep_rec,
 )
 from ecl2df.compdat import unrolldf
-import opm.io
-from pathlib import Path
 
 from preprocessing.utils import expand_dates, expand_wcon
 
@@ -422,6 +422,7 @@ class WellSpecsProcessor:
         """
 
         # Fill Nan values
+        welopen_df = welopen_df.copy()
         welopen_df["C2"] = welopen_df["C2"].fillna(welopen_df["C1"])
         complump_df["K2"] = complump_df["K2"].fillna(complump_df["K1"])
 

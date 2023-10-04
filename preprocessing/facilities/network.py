@@ -92,11 +92,6 @@ def preprocess(download_func, output_source, network, trust_existing=False, **_)
                     }
                     for b in branches
                 },
-                "segment_count": len(network_df),
-                # The length of a branchequipment is the measureddistance of the last segment
-                "measured_distance": network_df.merge(
-                    network_df[["BranchEquipment", "Segment"]].groupby("BranchEquipment").max("segment").reset_index()
-                )["MeasuredDistance"].sum(),
             }
 
         network_info = {

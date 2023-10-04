@@ -1,3 +1,4 @@
+import os.path
 from itertools import chain, repeat
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
@@ -72,7 +73,10 @@ def preprocess(
     data_by_file_idx = {}
     max_proc_idx = 0
     with ThreadPool(processes=(workers or 4)) as pool:
-        branch_datas = pool.imap(_download_file_data, enumerate(flowline_files, start=1))
+        branch_datas = pool.imap(
+            _download_file_data,
+            sorted((int(x.split(os.path.sep)[-2].split("SIMULATION_")[-1]), x) for x in flowline_files),
+        )
         for input_file_idx, branch_data in branch_datas:
             data_by_file_idx[input_file_idx] = branch_data
 

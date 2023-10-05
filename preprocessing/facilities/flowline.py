@@ -33,7 +33,7 @@ def preprocess(
     flowline_files = flowlines
     output_sub_directory = Path(flowline_files[0]).parents[1]  # cases/{group}  # noqa
 
-    networks = preprocess_network(download_func, output_source, network_file, trust_existing=True)
+    networks = preprocess_network(output_source, network_file, trust_existing=True, include_topology=False)
 
     branches = pd.DataFrame(
         list(

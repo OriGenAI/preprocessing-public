@@ -1,6 +1,8 @@
 import json
 import os.path
+import re
 from collections import OrderedDict
+from itertools import chain
 from pathlib import Path
 from threading import Lock
 
@@ -15,7 +17,7 @@ ACQUIRE_DICT_LOCK = Lock()
 LOCK_DICT = {}
 
 
-def preprocess(download_func, output_source, network, trust_existing=False, **_):
+def preprocess(output_source, network, subsurface_mapping=None, trust_existing=False, include_topology=True, **_):
     output_file_name = Path(output_source.uri) / "network.json"
     output_file_image_name = Path(output_source.uri) / "network.svg"
 
@@ -30,72 +32,20 @@ def preprocess(download_func, output_source, network, trust_existing=False, **_)
             with open(output_file_name, "r") as r:
                 return json.load(r)
 
-        df = get_raw_network_dataframe(download_func, output_source, network)
+        df = pd.read_csv(Path(output_source.uri) / network)
 
-        topology, svg_image = get_network_topology(df)
+        topology, svg_image = get_network_topology(df) if include_topology else (None, None)
+        network = get_network_segment_info(df, topology)
 
-        unique_counts = df.groupby(["Elevation", "Lat", "Long"]).transform("nunique")
-        df["num_connections"] = unique_counts["BranchEquipment"]
-        network_number = sorted(
-            x.item() for x in df["Network"].unique()
-        )  # Since these values are going to be seralized, ensure they are python primitives
-
-        if set(network_number) - set(range(1, len(network_number) + 1)):
-            raise RuntimeError("Network numbers for flowlines must start in 1 and be consecutive (PE: 1,2,3,4...)")
-
-        network = OrderedDict()
-        for n in sorted(network_number):
-            network_df = df[df["Network"] == n]
-            branches = network_df["BranchEquipment"].unique().tolist()
-            network[n] = {
-                "connections_by_network": [
-                    {"from": [c["BranchEquipment"], c["Segment"]], "to": [c["BranchEquipment_b"], c["Segment_b"]]}
-                    for c in topology[(topology["Network"] == n) & (topology["Network_b"] == n)].to_dict("records")
-                ],
-                "connections": [
-                    {
-                        "from": {
-                            "network": c["Network"] if c["Network"].__class__ != pd.NA.__class__ else None,
-                            "segment": [c["BranchEquipment"], c["Segment"]],
-                        },
-                        "to": {
-                            "network": c["Network_b"] if c["Network_b"].__class__ != pd.NA.__class__ else None,
-                            "segment": [c["BranchEquipment_b"], c["Segment_b"]],
-                        },
-                    }
-                    for c in topology[
-                        topology["BranchEquipment"].isin(branches) | topology["BranchEquipment_b"].isin(branches)
-                    ].to_dict("records")
-                ],
-                "branches": {
-                    b: {
-                        "segments": OrderedDict(
-                            (data.pop("s"), data)
-                            for data in (
-                                network_df[network_df["BranchEquipment"] == b]
-                                .drop(columns=["BranchEquipment", "Network"])
-                                .rename(
-                                    columns={
-                                        "MeasuredDistance": "measured_distance",
-                                        "HorizontalDistance": "horizontal_distance",
-                                        "Elevation": "elevation",
-                                        "IsVertex": "is_vertex",
-                                        "Lat": "lat",
-                                        "Long": "long",
-                                        "Segment": "s",
-                                    }
-                                )
-                                .sort_values("s")
-                                .to_dict("records")
-                            )
-                        ),
-                    }
-                    for b in branches
-                },
-            }
+        subsurface_mapping = (
+            get_subsurface_mapping(Path(output_source.uri) / subsurface_mapping)
+            if subsurface_mapping is not None
+            else None
+        )
 
         network_info = {
             "networks": network,
+            "subsurface_mapping": subsurface_mapping,
             "topology": [
                 {
                     "from": {
@@ -107,17 +57,114 @@ def preprocess(download_func, output_source, network, trust_existing=False, **_)
                         "segment": [c["BranchEquipment_b"], c["Segment_b"]],
                     },
                 }
-                for c in topology.to_dict("records")
+                for c in (topology.to_dict("records") if topology is not None else [])
             ],
         }
 
         with open(output_file_name, "w") as output_file:
             json.dump(network_info, output_file)
 
-        with open(output_file_image_name, "w") as output_file:
-            output_file.write(svg_image)
+        if svg_image:
+            with open(output_file_image_name, "w") as output_file:
+                output_file.write(svg_image)
 
     return network_info
+
+
+def get_subsurface_mapping(file_path):
+    df = pd.read_csv(file_path)
+
+    # Try to sort cluster numerically and
+    cluster_names = [(next(iter(re.findall(r"\d+", x)), None), x) for x in df["ClusterName"].unique()]
+    cluster_with_numbers = [
+        ((cluster_name.split(cluster_no, 1)[0], int(cluster_no)), cluster_name)
+        for (cluster_no, cluster_name) in cluster_names
+        if cluster_no is not None
+    ]
+    max_cluster_number = max(x[0][1] for x in cluster_with_numbers) + 1
+    cluster_with_no_numbers = [((x, max_cluster_number), max_cluster_number) for x in cluster_names if x[0] is None]
+
+    sorted_clusters = [x[1] for x in sorted(chain(cluster_with_no_numbers, cluster_with_numbers), key=lambda x: x[0])]
+
+    mapping = OrderedDict()
+    for cluster_name in sorted_clusters:
+        mapping[cluster_name] = list(
+            set(df[df["ClusterName"] == sorted_clusters[0]]["SubSurfaceName"].sort_values().to_list())
+        )
+
+    assert set(mapping.keys()) == set(df["ClusterName"].unique())
+    assert not any(x for x in mapping.values() if len(x) == 0)
+
+    return mapping
+
+
+def get_network_segment_info(df, topology=None):
+    unique_counts = df.groupby(["Elevation", "Lat", "Long"]).transform("nunique")
+    df["num_connections"] = unique_counts["BranchEquipment"]
+    network_number = sorted(
+        x.item() for x in df["Network"].unique()
+    )  # Since these values are going to be seralized, ensure they are python primitives
+
+    if set(network_number) - set(range(1, len(network_number) + 1)):
+        raise RuntimeError("Network numbers for flowlines must start in 1 and be consecutive (PE: 1,2,3,4...)")
+
+    network = OrderedDict()
+    for n in sorted(network_number):
+        network_df = df[df["Network"] == n]
+        branches = network_df["BranchEquipment"].unique().tolist()
+        network[n] = {
+            "connections_by_network": [
+                {"from": [c["BranchEquipment"], c["Segment"]], "to": [c["BranchEquipment_b"], c["Segment_b"]]}
+                for c in topology[(topology["Network"] == n) & (topology["Network_b"] == n)].to_dict("records")
+            ]
+            if topology is not None
+            else [],
+            "connections": [
+                {
+                    "from": {
+                        "network": c["Network"] if c["Network"].__class__ != pd.NA.__class__ else None,
+                        "segment": [c["BranchEquipment"], c["Segment"]],
+                    },
+                    "to": {
+                        "network": c["Network_b"] if c["Network_b"].__class__ != pd.NA.__class__ else None,
+                        "segment": [c["BranchEquipment_b"], c["Segment_b"]],
+                    },
+                }
+                for c in topology[
+                    topology["BranchEquipment"].isin(branches) | topology["BranchEquipment_b"].isin(branches)
+                ].to_dict("records")
+            ]
+            if topology is not None
+            else [],
+            "branches": {
+                b: {
+                    "segments": OrderedDict(
+                        (data.pop("s"), data)
+                        for data in (
+                            network_df[network_df["BranchEquipment"] == b]
+                            .drop(columns=["BranchEquipment", "Network"])
+                            .rename(
+                                columns={
+                                    "MeasuredDistance": "measured_distance",
+                                    "HorizontalDistance": "horizontal_distance",
+                                    "Elevation": "elevation",
+                                    "IsVertex": "is_vertex",
+                                    "IsSink": "is_sink",
+                                    "Lat": "lat",
+                                    "Long": "long",
+                                    "Segment": "s",
+                                }
+                            )
+                            .sort_values("s")
+                            .to_dict("records")
+                        )
+                    ),
+                }
+                for b in branches
+            },
+        }
+
+    return network
 
 
 def get_network_topology(df):
@@ -288,9 +335,3 @@ def get_network_topology(df):
     )
 
     return topology, image
-
-
-def get_raw_network_dataframe(download_func, output_source, network):
-    download_func(network, output_source.uri)
-    input_file_name = Path(output_source.uri) / network
-    return pd.read_csv(input_file_name)

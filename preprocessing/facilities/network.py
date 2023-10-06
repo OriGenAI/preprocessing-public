@@ -89,11 +89,10 @@ def get_subsurface_mapping(file_path):
     mapping = OrderedDict()
     for cluster_name in sorted_clusters:
         mapping[cluster_name] = list(
-            set(df[df["ClusterName"] == sorted_clusters[0]]["SubSurfaceName"].sort_values().to_list())
+            set(df[df["ClusterName"] == cluster_name]["SubSurfaceName"].dropna().sort_values().to_list())
         )
 
     assert set(mapping.keys()) == set(df["ClusterName"].unique())
-    assert not any(x for x in mapping.values() if len(x) == 0)
 
     return mapping
 

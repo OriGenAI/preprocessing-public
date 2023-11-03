@@ -101,7 +101,11 @@ def get_ecl(data):
     for kw in kw_list:
         parser.add_keyword(builtin[kw])
 
-    deck = parser.parse(deckfile, parseContext, section_list)
+    try:
+        deck = parser.parse(deckfile, parseContext, section_list)
+    except RuntimeError as e:
+        if str(e) == "Parsing individual sections not possible when section keywords in root input file":
+            deck = parser.parse(deckfile, parseContext)
 
     return deck
 
